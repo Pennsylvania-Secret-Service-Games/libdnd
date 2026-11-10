@@ -3,6 +3,7 @@ package libdnd
 import "base:intrinsics"
 import "base:runtime"
 import "core:fmt"
+import "core:math/rand"
 import "core:mem"
 import "core:reflect"
 import "core:strings"
@@ -352,4 +353,25 @@ map_err_to_err :: proc(v: Err) -> (Err, bool) {
 try :: proc(v: $T, e: $E, loc := #caller_location) -> (T, Err) {
 	et := err(e, loc = loc)
 	return v, et
+}
+
+roll_dice :: proc(count: int, d: int) -> int {
+	assert(d > 0 && count > 0)
+	out := 0
+	for i in 0 ..< count {
+		out += rand.int_range(1, d + 1)
+	}
+	return out
+}
+
+catch :: proc(v: Err) -> bool {
+	if v != nil {
+		delete_err(v)
+		return false
+	} else {
+		return true
+	}
+}
+try_catch :: proc(v: $T, e: Err) -> (T, bool) {
+	return v, catch(e)
 }
