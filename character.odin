@@ -2,6 +2,7 @@ package libdnd
 import "core:fmt"
 import "core:math/rand"
 import "core:mem"
+import "core:strings"
 Ancestry :: enum {
 	Human,
 	Elf,
@@ -29,7 +30,7 @@ HairColor :: enum {
 
 SkinColor :: enum {
 	Fair,
-	Tan,
+	Gold,
 	Olive,
 	Dark,
 }
@@ -170,6 +171,7 @@ Character :: struct {
 	skills:               [dynamic]SkillStats,
 	equipment:            [dynamic]string,
 	attacks:              [dynamic]string,
+	number_of_attacks:    int,
 	sneak_attack_dice:    int,
 	spell_attack_bonus:   int,
 	spell_save_dc:        int,
@@ -1350,6 +1352,13 @@ generate_attacks :: proc(this: ^Character, is_wealthy: bool, alloc: mem.Allocato
 			)
 		}
 	case .Fighter:
+		if this.level >= 20 {
+			this.number_of_attacks = 4
+		} else if this.level >= 11 {
+			this.number_of_attacks = 3
+		} else if this.level >= 5 {
+			this.number_of_attacks = 2
+		}
 		if rand.float32() < 0.2 {
 			create_weapon(
 				this,
@@ -1550,6 +1559,9 @@ generate_attacks :: proc(this: ^Character, is_wealthy: bool, alloc: mem.Allocato
 			}
 		}
 	case .Paladin:
+		if this.level >= 5 {
+			this.number_of_attacks = 2
+		}
 		if rand.float32() < 0.2 {
 			create_weapon(
 				this,
@@ -1606,6 +1618,9 @@ generate_attacks :: proc(this: ^Character, is_wealthy: bool, alloc: mem.Allocato
 	case .Commoner:
 		create_weapon(this, .Dexterity, magic_bonus, "dagger", 1, 4, "piercing", "", alloc, true)
 	case .Ranger:
+		if this.level >= 5 {
+			this.number_of_attacks = 2
+		}
 		if rand.float32() < 0.2 {
 			create_weapon(
 				this,
@@ -1646,7 +1661,33 @@ generate_attacks :: proc(this: ^Character, is_wealthy: bool, alloc: mem.Allocato
 		)
 	case .Thief:
 		this.sneak_attack_dice = (this.level + 1) / 2
-		create_weapon(this, .Dexterity, magic_bonus, "dagger", 1, 4, "piercing", "", alloc, true)
+		if rand.float32() < 0.5 {
+			create_weapon(
+				this,
+				.Dexterity,
+				magic_bonus,
+				"dagger",
+				1,
+				4,
+				"piercing",
+				"",
+				alloc,
+				true,
+			)
+		} else {
+			create_weapon(
+				this,
+				.Dexterity,
+				magic_bonus,
+				"short sword",
+				1,
+				6,
+				"piercing",
+				"",
+				alloc,
+				true,
+			)
+		}
 		if rand.float32() < 0.2 {
 			create_weapon(
 				this,
@@ -1673,6 +1714,937 @@ generate_attacks :: proc(this: ^Character, is_wealthy: bool, alloc: mem.Allocato
 				alloc,
 				true,
 			)
+		}
+	}
+}
+
+generate_appearance :: proc(this: ^Character) {
+
+	switch this.ancestry {
+	case .Human:
+		this.height_inches = 4 * 12 + 8
+		this.weight_pounds = 110
+		str_mod := this.ability_scores[.Strength] / 2
+		base := roll_dice(2, 10)
+		base = clamp(base, str_mod, 40)
+		weight_mul := roll_dice(2, 4)
+		this.height_inches += base
+		this.weight_pounds += base * weight_mul
+	case .Elf:
+		this.height_inches = 4 * 12 + 6
+		this.weight_pounds = 90
+		str_mod := this.ability_scores[.Strength] / 2
+		base := roll_dice(2, 10)
+		base = clamp(base, str_mod, 40)
+		weight_mul := roll_dice(1, 4)
+		this.height_inches += base
+		this.weight_pounds += base * weight_mul
+	case .Dwarf:
+		this.height_inches = 3 * 12 + 8
+		this.weight_pounds = 115
+		str_mod := this.ability_scores[.Strength] / 4
+		base := roll_dice(2, 4)
+		base = clamp(base, str_mod, 40)
+		weight_mul := roll_dice(2, 6)
+		this.height_inches += base
+		this.weight_pounds += base * weight_mul
+	case .Halfing:
+		this.height_inches = 2 * 12 + 7
+		this.weight_pounds = 35
+		str_mod := this.ability_scores[.Strength] / 4
+		base := roll_dice(2, 4)
+		base = clamp(base, str_mod, 40)
+		weight_mul := 1
+		this.height_inches += base
+		this.weight_pounds += base * weight_mul
+	case .Gnome:
+		this.height_inches = 2 * 12 + 11
+		this.weight_pounds = 35
+		str_mod := this.ability_scores[.Strength] / 4
+		base := roll_dice(2, 4)
+		base = clamp(base, str_mod, 40)
+		weight_mul := 1
+		this.height_inches += base
+		this.weight_pounds += base * weight_mul
+	case .HalfOrc:
+		this.height_inches = 4 * 12 + 10
+		this.weight_pounds = 140
+		str_mod := this.ability_scores[.Strength] / 2
+		base := roll_dice(2, 10)
+		base = clamp(base, str_mod, 40)
+		weight_mul := roll_dice(2, 6)
+		this.height_inches += base
+		this.weight_pounds += base * weight_mul
+	case .HalfElf:
+		this.height_inches = 4 * 12 + 9
+		this.weight_pounds = 110
+		str_mod := this.ability_scores[.Strength] / 2
+		base := roll_dice(2, 8)
+		base = clamp(base, str_mod, 40)
+		weight_mul := roll_dice(2, 4)
+		this.height_inches += base
+		this.weight_pounds += base * weight_mul
+	}
+	random_skin_color :: proc() -> SkinColor {
+		tmp := rand.float32()
+		if tmp < 0.1 {
+			return .Fair
+		} else if tmp < 0.5 {
+			return .Gold
+		} else if tmp < 0.8 {
+			return .Olive
+		} else {
+			return .Dark
+		}
+	}
+	random_hair_color :: proc() -> HairColor {
+		tmp := rand.float32()
+		if tmp < 0.1 {
+			return .Red
+		} else if tmp < 0.3 {
+			return .Blonde
+		} else if tmp < 0.65 {
+			return .Brown
+		} else {
+			return .Black
+		}
+	}
+
+	random_eye_color :: proc() -> EyeColor {
+		tmp := rand.float32()
+		if tmp < 0.1 {
+			return .Gray
+		} else if tmp < 0.35 {
+			return .Blue
+		} else if tmp < 0.5 {
+			return .Green
+		} else if tmp < 0.75 {
+			return .Brown
+		} else {
+			return .Black
+		}
+	}
+	oeridian_appearance :: proc(this: ^Character) {
+		tmp := rand.float32()
+		if tmp < 0.5 {
+			this.skin_color = .Gold
+		} else if tmp < 0.9 {
+			this.skin_color = .Olive
+		} else {
+			this.skin_color = random_skin_color()
+		}
+		this.hair_color = random_hair_color()
+		tmp2 := rand.float32()
+		if tmp2 < 0.5 {
+			this.eye_color = .Brown
+		} else if tmp2 < 0.9 {
+			this.eye_color = .Gray
+		} else {
+			this.eye_color = random_eye_color()
+		}
+	}
+	suloise_appearance :: proc(this: ^Character) {
+		tmp := rand.float32()
+		if tmp < 0.95 {
+			this.skin_color = .Fair
+		} else {
+			this.skin_color = random_skin_color()
+		}
+		tmp2 := rand.float32()
+		if tmp2 < 0.2 {
+			this.hair_color = .Red
+		} else if tmp2 < 0.9 {
+			this.hair_color = .Blonde
+		} else {
+			this.hair_color = random_hair_color()
+		}
+		tmp3 := rand.float32()
+		if tmp3 < 0.5 {
+			this.eye_color = .Blue
+		} else if tmp3 < 0.9 {
+			this.eye_color = .Gray
+		} else {
+			this.eye_color = random_eye_color()
+		}
+	}
+	baklunish_appearance :: proc(this: ^Character) {
+		tmp := rand.float32()
+		if tmp < 0.9 {
+			this.skin_color = .Gold
+		} else {
+			this.skin_color = random_skin_color()
+		}
+		tmp2 := rand.float32()
+		if tmp2 < 0.8 {
+			this.eye_color = .Green
+		} else if tmp2 < 0.9 {
+			this.eye_color = .Gray
+		} else {
+			this.eye_color = random_eye_color()
+		}
+		tmp3 := rand.float32()
+		if tmp3 < 0.6 {
+			this.hair_color = .Brown
+		} else if tmp3 < 0.9 {
+			this.hair_color = .Black
+		} else {
+			this.hair_color = random_hair_color()
+		}
+	}
+	flannae_appearance :: proc(this: ^Character) {
+		this.skin_color = random_skin_color()
+		tmp := rand.float32()
+		if tmp < 0.5 {
+			this.eye_color = .Brown
+		} else if tmp < 0.9 {
+			this.eye_color = .Black
+		} else {
+			this.eye_color = random_eye_color()
+		}
+		tmp2 := rand.float32()
+		if tmp2 < 0.9 {
+			this.hair_color = .Black
+		} else if tmp2 < 0.96 {
+			this.hair_color = .Brown
+		} else {
+			this.hair_color = random_hair_color()
+		}
+	}
+	switch this.culture {
+	case .Oeridian:
+		oeridian_appearance(this)
+	case .Suloise:
+		suloise_appearance(this)
+	case .Baklunish:
+		baklunish_appearance(this)
+	case .Flannae:
+		flannae_appearance(this)
+	case .OeridianSuloise:
+		if rand.float32() < 0.5 {
+			oeridian_appearance(this)
+		} else {
+			suloise_appearance(this)
+		}
+	case .OeridianFlannae:
+		if rand.float32() < 0.5 {
+			oeridian_appearance(this)
+		} else {
+			flannae_appearance(this)
+		}
+	case .Dwarf:
+		tmp := rand.float32()
+		tmp2 := rand.float32()
+		tmp3 := rand.float32()
+		if tmp < 0.2 {
+			this.skin_color = .Fair
+			this.hair_color = random_hair_color()
+			this.eye_color = random_eye_color()
+		} else if tmp < 0.5 {
+			this.skin_color = .Gold
+			if tmp2 < 0.5 {
+				this.eye_color = .Brown
+			} else if tmp2 < 0.9 {
+				this.eye_color = .Black
+			} else {
+				this.eye_color = .Gray
+			}
+			if tmp3 < 0.5 {
+				this.hair_color = .Brown
+			} else {
+				this.hair_color = .Black
+			}
+		} else if tmp < 0.8 {
+			this.skin_color = .Olive
+			if tmp2 < 0.5 {
+				this.eye_color = .Brown
+			} else if tmp2 < 0.9 {
+				this.eye_color = .Black
+			} else {
+				this.eye_color = .Gray
+			}
+			if tmp3 < 0.5 {
+				this.hair_color = .Brown
+			} else {
+				this.hair_color = .Black
+			}
+		} else {
+			this.skin_color = .Dark
+			if tmp2 < 0.5 {
+				this.eye_color = .Brown
+			} else if tmp2 < 0.9 {
+				this.eye_color = .Black
+			} else {
+				this.eye_color = .Gray
+			}
+			if tmp3 < 0.5 {
+				this.hair_color = .Brown
+			} else {
+				this.hair_color = .Black
+			}
+		}
+	case .Elf:
+		tmp := rand.float32()
+		tmp2 := rand.float32()
+		tmp3 := rand.float32()
+		if tmp < 0.2 {
+			this.skin_color = .Fair
+			this.hair_color = random_hair_color()
+			this.eye_color = random_eye_color()
+		} else if tmp < 0.5 {
+			this.skin_color = .Gold
+			if tmp2 < 0.5 {
+				this.eye_color = .Brown
+			} else if tmp2 < 0.9 {
+				this.eye_color = .Black
+			} else {
+				this.eye_color = .Gray
+			}
+			if tmp3 < 0.5 {
+				this.hair_color = .Brown
+			} else {
+				this.hair_color = .Black
+			}
+		} else if tmp < 0.8 {
+			this.skin_color = .Olive
+			if tmp2 < 0.5 {
+				this.eye_color = .Brown
+			} else if tmp2 < 0.9 {
+				this.eye_color = .Black
+			} else {
+				this.eye_color = .Gray
+			}
+			if tmp3 < 0.5 {
+				this.hair_color = .Brown
+			} else {
+				this.hair_color = .Black
+			}
+		} else {
+			this.skin_color = .Dark
+			if tmp2 < 0.5 {
+				this.eye_color = .Brown
+			} else if tmp2 < 0.9 {
+				this.eye_color = .Black
+			} else {
+				this.eye_color = .Gray
+			}
+			if tmp3 < 0.5 {
+				this.hair_color = .Brown
+			} else {
+				this.hair_color = .Black
+			}
+		}
+	case .Gnome:
+		tmp := rand.float32()
+		tmp2 := rand.float32()
+		tmp3 := rand.float32()
+		if tmp < 0.2 {
+			this.skin_color = .Fair
+			this.hair_color = random_hair_color()
+			this.eye_color = random_eye_color()
+		} else if tmp < 0.5 {
+			this.skin_color = .Gold
+			if tmp2 < 0.5 {
+				this.eye_color = .Brown
+			} else if tmp2 < 0.9 {
+				this.eye_color = .Black
+			} else {
+				this.eye_color = .Gray
+			}
+			if tmp3 < 0.5 {
+				this.hair_color = .Brown
+			} else {
+				this.hair_color = .Black
+			}
+		} else if tmp < 0.8 {
+			this.skin_color = .Olive
+			if tmp2 < 0.5 {
+				this.eye_color = .Brown
+			} else if tmp2 < 0.9 {
+				this.eye_color = .Black
+			} else {
+				this.eye_color = .Gray
+			}
+			if tmp3 < 0.5 {
+				this.hair_color = .Brown
+			} else {
+				this.hair_color = .Black
+			}
+		} else {
+			this.skin_color = .Dark
+			if tmp2 < 0.5 {
+				this.eye_color = .Brown
+			} else if tmp2 < 0.9 {
+				this.eye_color = .Black
+			} else {
+				this.eye_color = .Gray
+			}
+			if tmp3 < 0.5 {
+				this.hair_color = .Brown
+			} else {
+				this.hair_color = .Black
+			}
+		}
+	case .Halfing:
+		tmp := rand.float32()
+		tmp2 := rand.float32()
+		tmp3 := rand.float32()
+		if tmp < 0.2 {
+			this.skin_color = .Fair
+			this.hair_color = random_hair_color()
+			this.eye_color = random_eye_color()
+		} else if tmp < 0.5 {
+			this.skin_color = .Gold
+			if tmp2 < 0.5 {
+				this.eye_color = .Brown
+			} else if tmp2 < 0.9 {
+				this.eye_color = .Black
+			} else {
+				this.eye_color = .Gray
+			}
+			if tmp3 < 0.5 {
+				this.hair_color = .Brown
+			} else {
+				this.hair_color = .Black
+			}
+		} else if tmp < 0.8 {
+			this.skin_color = .Olive
+			if tmp2 < 0.5 {
+				this.eye_color = .Brown
+			} else if tmp2 < 0.9 {
+				this.eye_color = .Black
+			} else {
+				this.eye_color = .Gray
+			}
+			if tmp3 < 0.5 {
+				this.hair_color = .Brown
+			} else {
+				this.hair_color = .Black
+			}
+		} else {
+			this.skin_color = .Dark
+			if tmp2 < 0.5 {
+				this.eye_color = .Brown
+			} else if tmp2 < 0.9 {
+				this.eye_color = .Black
+			} else {
+				this.eye_color = .Gray
+			}
+			if tmp3 < 0.5 {
+				this.hair_color = .Brown
+			} else {
+				this.hair_color = .Black
+			}
+		}
+	case:
+	}
+
+}
+generate_personality :: proc(this: ^Character) {
+	align := roll_dice(1, 100)
+	if align <= 5 {
+		this.alignment = .LawfulEvil
+	} else if align <= 10 {
+		this.alignment = .NeutralEvil
+	} else if align <= 15 {
+		this.alignment = .ChaoticEvil
+	} else if align <= 25 {
+		this.alignment = .LawfulNeutral
+	} else if align <= 35 {
+		this.alignment = .TrueNeutral
+	} else if align <= 45 {
+		this.alignment = .ChaoticNeutral
+	} else if align <= 60 {
+		this.alignment = .ChaoticGood
+	} else if align <= 80 {
+		this.alignment = .NeutralGood
+	} else {
+		this.alignment = .LawfulGood
+	}
+	{
+		wealth := roll_dice(1, 10)
+		if wealth == 1 {
+			append(&this.personality, "Relative Wealth: None")
+		} else if wealth == 2 || wealth == 3 {
+			append(&this.personality, "Relative Wealth: scant")
+		} else if wealth == 4 || wealth == 5 || wealth == 6 || wealth == 7 {
+			append(&this.personality, "Relative Wealth: average")
+		} else if wealth == 8 {
+			append(&this.personality, "Relative Wealth: above average")
+		} else if wealth == 9 {
+			append(&this.personality, "Relative Wealth: exceptional")
+		} else if wealth == 10 {
+			append(&this.personality, "Relative Wealth: super abundant")
+		}
+	}
+	{
+		generate_apperance := roll_dice(1, 10)
+		if generate_apperance == 1 {
+			append(&this.personality, "Apperance: dirty")
+		} else if generate_apperance == 2 {
+			append(&this.personality, "Apperance: clean")
+		} else if generate_apperance == 3 {
+			append(&this.personality, "Apperance: unkempt")
+		} else if generate_apperance == 4 {
+			append(&this.personality, "Apperance: immaculate")
+		} else if generate_apperance == 5 {
+			append(&this.personality, "Apperance: rought")
+		} else if generate_apperance == 6 {
+			append(&this.personality, "Apperance: ragged")
+		} else if generate_apperance == 7 {
+			append(&this.personality, "Apperance: dandyish")
+		} else if generate_apperance == 8 {
+			append(&this.personality, "Apperance: foppish")
+		} else if generate_apperance == 9 {
+			append(&this.personality, "Apperance: non-descript")
+		} else if generate_apperance == 10 {
+			append(&this.personality, "Apperance: imposing")
+		}
+	}
+	{
+		hit := false
+		for {
+			sanity := roll_dice(1, 10)
+			if sanity == 1 {
+				append(&this.personality, "Sanity: very stable")
+			} else if sanity == 2 || sanity == 3 || sanity == 4 || sanity == 5 || sanity == 6 {
+				append(&this.personality, "Sanity: normal")
+			} else if sanity == 7 {
+				append(&this.personality, "Sanity: neurotic")
+			} else if sanity == 8 {
+				append(&this.personality, "Sanity: unstable")
+			} else if sanity == 9 {
+				if !hit {
+					hit = true
+					continue
+				}
+				append(&this.personality, "Sanity: insane")
+			} else if sanity == 10 {
+				if !hit {
+					hit = true
+					continue
+				}
+				append(&this.personality, "Sanity: maniacal")
+			}
+			break
+		}
+	}
+	{
+		general := roll_dice(1, 24)
+		if general == 1 {
+			append(&this.personality, "General Tendencies: optimist")
+		}
+		if general == 2 {
+			append(&this.personality, "General Tendencies: pessimist")
+		} else if general == 3 {
+			append(&this.personality, "General Tendencies: hedonist")
+		} else if general == 4 {
+			append(&this.personality, "General Tendencies: altruist")
+		} else if general == 5 {
+			append(&this.personality, "General Tendencies: helpful/kindly")
+		} else if general == 6 {
+			append(&this.personality, "General Tendencies: careless")
+		} else if general == 7 {
+			append(&this.personality, "General Tendencies: capricious/mischievious")
+		} else if general == 8 {
+			append(&this.personality, "General Tendencies: sober")
+		} else if general == 9 {
+			append(&this.personality, "General Tendencies: curious/inquisitive")
+		} else if general == 10 {
+			append(&this.personality, "General Tendencies: moody")
+		} else if general == 11 {
+			append(&this.personality, "General Tendencies: trusting")
+		} else if general == 12 {
+			append(&this.personality, "General Tendencies: suspicious/cautious")
+		} else if general == 13 {
+			append(&this.personality, "General Tendencies: precise/exacting")
+		} else if general == 14 {
+			append(&this.personality, "General Tendencies: perceptive")
+		} else if general == 15 {
+			append(&this.personality, "General Tendencies: opinionated/contrary")
+		} else if general == 16 {
+			append(&this.personality, "General Tendencies: violent/warlike")
+		} else if general == 17 {
+			append(&this.personality, "General Tendencies: studious")
+		} else if general == 18 {
+			append(&this.personality, "General Tendencies: foul/barbaric")
+		} else if general == 19 {
+			append(&this.personality, "General Tendencies: cruel/callous")
+		} else if general == 20 {
+			append(&this.personality, "General Tendencies: practical joker/prankster")
+		} else if general == 21 {
+			append(&this.personality, "General Tendencies: servile/obsequious")
+		} else if general == 22 {
+			append(&this.personality, "General Tendencies: fanatical/obcessive")
+		} else if general == 23 {
+			append(&this.personality, "General Tendencies: malevolent")
+		} else if general == 24 {
+			append(&this.personality, "General Tendencies: loquacious")
+		}
+	}
+	{
+		personality_base := roll_dice(1, 8)
+		if personality_base == 1 ||
+		   personality_base == 2 ||
+		   personality_base == 3 ||
+		   personality_base == 4 ||
+		   personality_base == 5 {
+			per := roll_dice(1, 8)
+			if per == 1 {
+				append(&this.personality, "Personality: modest")
+			} else if per == 2 {
+				append(&this.personality, "Personality: egoist/arrogant")
+			} else if per == 3 {
+				append(&this.personality, "Personality: friendly")
+			} else if per == 4 {
+				append(&this.personality, "Personality: aloof")
+			} else if per == 5 {
+				append(&this.personality, "Personality: hostile")
+			} else if per == 6 {
+				append(&this.personality, "Personality: well-spoken")
+			} else if per == 7 {
+				append(&this.personality, "Personality: diplomatic")
+			} else if per == 8 {
+				append(&this.personality, "Personality: abrasive")
+			}
+		} else if personality_base == 6 || personality_base == 7 {
+			per := roll_dice(1, 8)
+			if per == 1 {
+				append(&this.personality, "Personality: forceful(extroverted)")
+			} else if per == 2 {
+				append(&this.personality, "Personality: overbearing(extroverted)")
+			} else if per == 3 {
+				append(&this.personality, "Personality: friendly(extroverted)")
+			} else if per == 4 {
+				append(&this.personality, "Personality: blustering(extroverted)")
+			} else if per == 5 {
+				append(&this.personality, "Personality: antagonistic(extroverted)")
+			} else if per == 6 {
+				append(&this.personality, "Personality: rude(extroverted)")
+			} else if per == 7 {
+				append(&this.personality, "Personality: rash(extroverted)")
+			} else if per == 8 {
+				append(&this.personality, "Personality: diplomatic(extroverted)")
+			}
+		} else if personality_base == 8 {
+			per := roll_dice(1, 8)
+			if per == 1 {
+				append(&this.personality, "Personality: retiring(introverted)")
+			} else if per == 2 {
+				append(&this.personality, "Personality: taciturn(introverted)")
+			} else if per == 3 {
+				append(&this.personality, "Personality: friendly(introverted)")
+			} else if per == 4 {
+				append(&this.personality, "Personality: aloof(introverted)")
+			} else if per == 5 {
+				append(&this.personality, "Personality: hostile(introverted)")
+			} else if per == 6 {
+				append(&this.personality, "Personality: rude(introverted)")
+			} else if per == 7 {
+				append(&this.personality, "Personality: courteous(introverted)")
+			} else if per == 8 {
+				append(&this.personality, "Personality: solitary/secretive(introverted)")
+			}
+		}
+	}
+	{
+		disp := roll_dice(1, 10)
+		if disp == 1 {
+			append(&this.personality, "Disposition: cheerful")
+		} else if disp == 2 {
+			append(&this.personality, "Disposition: morose")
+		} else if disp == 3 {
+			append(&this.personality, "Disposition: compassionate/sensitive")
+		} else if disp == 4 {
+			append(&this.personality, "Disposition: unfeeling/insensitive")
+		} else if disp == 5 {
+			append(&this.personality, "Disposition: humble")
+		} else if disp == 6 {
+			append(&this.personality, "Disposition: proud/haughty")
+		} else if disp == 7 {
+			append(&this.personality, "Disposition: even tempered")
+		} else if disp == 8 {
+			append(&this.personality, "Disposition: hot tempered")
+		} else if disp == 9 {
+			append(&this.personality, "Disposition: easy going")
+		} else if disp == 10 {
+			append(&this.personality, "Disposition: harsh")
+		}
+	}
+	{
+		intel := roll_dice(1, 10)
+		if intel == 1 {
+			append(&this.personality, "Intellect: dull")
+		} else if intel == 2 {
+			append(&this.personality, "Intellect: average")
+		} else if intel == 3 {
+			append(&this.personality, "Intellect: average")
+		} else if intel == 4 {
+			append(&this.personality, "Intellect: active")
+		} else if intel == 5 {
+			append(&this.personality, "Intellect: active")
+		} else if intel == 6 {
+			append(&this.personality, "Intellect: dreaming")
+		} else if intel == 7 {
+			append(&this.personality, "Intellect: ponderous")
+		} else if intel == 8 {
+			append(&this.personality, "Intellect: anti-intellectual")
+		} else if intel == 9 {
+			append(&this.personality, "Intellect: scheming")
+		} else if intel == 10 {
+			append(&this.personality, "Intellect: brilliant")
+		}
+	}
+	{
+		nature := roll_dice(1, 6)
+		if nature == 1 {
+			append(&this.personality, "Nature: soft-hearted")
+		} else if nature == 2 {
+			append(&this.personality, "Nature: forgiving")
+		} else if nature == 3 {
+			append(&this.personality, "Nature: hard-hearted")
+		} else if nature == 4 {
+			append(&this.personality, "Nature: unforgiving")
+		} else if nature == 5 {
+			append(&this.personality, "Nature: jealous")
+		} else if nature == 6 {
+			append(&this.personality, "Nature: vengeful")
+		}
+	}
+	{
+		mat := roll_dice(1, 6)
+		if mat == 1 {
+			append(&this.personality, "Materialism: aesthetic")
+		} else if mat == 2 {
+			append(&this.personality, "Materialism: intellectualist")
+		} else if mat == 3 {
+			append(&this.personality, "Materialism: verage")
+		} else if mat == 4 {
+			append(&this.personality, "Materialism: covetous")
+		} else if mat == 5 {
+			append(&this.personality, "Materialism: greedy")
+		} else if mat == 6 {
+			append(&this.personality, "Materialism: avaricious")
+		}
+	}
+	{
+		hon := roll_dice(1, 8)
+		if hon == 1 {
+			append(&this.personality, "Honesty: scrupulous")
+		} else if hon == 2 {
+			append(&this.personality, "Honesty: very honorable")
+		} else if hon == 3 {
+			append(&this.personality, "Honesty: truthful")
+		} else if hon == 4 {
+			append(&this.personality, "Honesty: verage")
+		} else if hon == 5 {
+			append(&this.personality, "Honesty: average")
+		} else if hon == 6 {
+			append(&this.personality, "Honesty: average")
+		} else if hon == 7 {
+			append(&this.personality, "Honesty: liar")
+		} else if hon == 8 {
+			append(&this.personality, "Honesty: deceitful")
+		}
+	}
+	{
+		brv := roll_dice(1, 8)
+		if brv == 1 {
+			append(&this.personality, "Bravery: normal")
+		} else if brv == 2 {
+			append(&this.personality, "Bravery: normal")
+		} else if brv == 3 {
+			append(&this.personality, "Bravery: normal")
+		} else if brv == 4 {
+			append(&this.personality, "Bravery: foolhardy")
+		} else if brv == 5 {
+			append(&this.personality, "Bravery :brave")
+		} else if brv == 6 {
+			append(&this.personality, "Bravery: fearless")
+		} else if brv == 7 {
+			append(&this.personality, "Bravery: cowardly")
+		} else if brv == 8 {
+			append(&this.personality, "Bravery: craven")
+		}
+	}
+	{
+		en := roll_dice(1, 8)
+		if en == 1 {
+			append(&this.personality, "Energy: slothful")
+		} else if en == 2 {
+			append(&this.personality, "Energy: lazy")
+		} else if en == 3 {
+			append(&this.personality, "Energy: normal")
+		} else if en == 4 {
+			append(&this.personality, "Energy: normal")
+		} else if en == 5 {
+			append(&this.personality, "Energy: normal")
+		} else if en == 6 {
+			append(&this.personality, "Energy: energetic")
+		} else if en == 7 {
+			append(&this.personality, "Energy: energetic")
+		} else if en == 8 {
+			append(&this.personality, "Energy: driven")
+		}
+	}
+	{
+		thr := roll_dice(1, 8)
+		if thr == 1 {
+			append(&this.personality, "Thrift: miserly")
+		} else if thr == 2 {
+			append(&this.personality, "Thrift: mean")
+		} else if thr == 3 {
+			append(&this.personality, "Thrift: thrifty")
+		} else if thr == 4 {
+			append(&this.personality, "Thrift: average")
+		} else if thr == 5 {
+			append(&this.personality, "Thrift: average")
+		} else if thr == 6 {
+			append(&this.personality, "Thrift: spendthrift")
+		} else if thr == 7 {
+			append(&this.personality, "Thrift: spendthrift")
+		} else if thr == 8 {
+			append(&this.personality, "Thrift: wastrel")
+		}
+	}
+	{
+		hit := false
+		for {
+			morals := roll_dice(1, 12)
+			if morals == 1 {
+				append(&this.personality, "Morals: aesthetic")
+			} else if morals == 2 {
+				append(&this.personality, "Morals: virtuous")
+			} else if morals == 3 {
+				append(&this.personality, "Morals: normal")
+			} else if morals == 4 {
+				append(&this.personality, "Morals: normal")
+			} else if morals == 5 {
+				append(&this.personality, "Morals: lusty")
+			} else if morals == 6 {
+				append(&this.personality, "Morals: lusty")
+			} else if morals == 7 {
+				append(&this.personality, "Morals: lustful")
+			} else if morals == 8 {
+				append(&this.personality, "Morals: immoral")
+			} else if morals == 9 {
+				append(&this.personality, "Morals: amoral")
+			} else if morals == 10 {
+				if !hit {
+					hit = true
+					continue
+				}
+				append(&this.personality, "Morals: perverted")
+			} else if morals == 11 {
+				if !hit {
+					hit = true
+					continue
+				}
+				append(&this.personality, "Morals: sadistic")
+			} else if morals == 12 {
+				if !hit {
+					hit = true
+					continue
+				}
+				append(&this.personality, "Morals: depraved")
+			}
+			break
+		}
+	}
+	{
+		pie := roll_dice(1, 12)
+		if pie == 1 {
+			append(&this.personality, "Piety: saintly")
+		} else if pie == 2 {
+			append(&this.personality, "Piety: martyr/zealot")
+		} else if pie == 3 {
+			append(&this.personality, "Piety: pious")
+		} else if pie == 4 {
+			append(&this.personality, "Piety: reverent")
+		} else if pie == 5 {
+			append(&this.personality, "Piety: average")
+		} else if pie == 6 {
+			append(&this.personality, "Piety: average")
+		} else if pie == 7 {
+			append(&this.personality, "Piety: saverage")
+		} else if pie == 8 {
+			append(&this.personality, "Piety: average")
+		} else if pie == 9 {
+			append(&this.personality, "Piety: impious")
+		} else if pie == 10 {
+			append(&this.personality, "Piety: irreverent")
+		} else if pie == 11 {
+			append(&this.personality, "Piety: iconoclastic")
+		} else if pie == 12 {
+			append(&this.personality, "Piety: irreligious")
+		}
+	}
+	{
+		intr := roll_dice(1, 24)
+		if intr == 1 {
+			append(&this.personality, "Interests: religion")
+		} else if intr == 2 {
+			append(&this.personality, "Interests: legends")
+		} else if intr == 3 {
+			append(&this.personality, "Interests: history")
+		} else if intr == 4 {
+			append(&this.personality, "Interests: nature")
+		} else if intr == 5 {
+			append(&this.personality, "Interests: horticulture")
+		} else if intr == 6 {
+			append(&this.personality, "Interests: husbandry")
+		} else if intr == 7 {
+			append(&this.personality, "Interests: exotic animals")
+		} else if intr == 8 {
+			append(&this.personality, "Interests: hunting")
+		} else if intr == 9 {
+			append(&this.personality, "Interests: fishing")
+		} else if intr == 10 {
+			append(&this.personality, "Interests: handicrafts")
+		} else if intr == 11 {
+			append(&this.personality, "Interests: athletics")
+		} else if intr == 12 {
+			append(&this.personality, "Interests: politics")
+		} else if intr == 13 {
+			append(&this.personality, "Interests: wines and spirits")
+		} else if intr == 14 {
+			append(&this.personality, "Interests: foods and preparation")
+		} else if intr == 15 {
+			append(&this.personality, "Interests: gambling")
+		} else if intr == 16 {
+			append(&this.personality, "Interests: drugs")
+		} else if intr == 17 || intr == 18 || intr == 19 || intr == 20 {
+			col := roll_dice(1, 12)
+			if col == 1 {
+				append(&this.personality, "Interests: collecting knives and daggers")
+			} else if col == 2 {
+				append(&this.personality, "Interests: collecting swords")
+			} else if col == 3 {
+				append(&this.personality, "Interests: collecting weapons")
+			} else if col == 4 {
+				append(&this.personality, "Interests: collecting shields and weapons")
+			} else if col == 5 {
+				append(&this.personality, "Interests: collecting armor")
+			} else if col == 6 {
+				append(&this.personality, "Interests: collecting books and scrolls")
+			} else if col == 7 {
+				append(&this.personality, "Interests: collecting minerals and gems")
+			} else if col == 8 {
+				append(&this.personality, "Interests: collecting ornaments and jewelry")
+			} else if col == 9 {
+				append(&this.personality, "Interests: collecting coins and tokens")
+			} else if col == 10 {
+				append(&this.personality, "Interests: collecting trophies and skins")
+			} else if col == 11 {
+				append(&this.personality, "Interests: collecting porcelain, china, and crystal")
+			} else if col == 12 {
+				append(&this.personality, "Interests: collecting artwork")
+			}
+		} else if intr == 21 {
+			append(&this.personality, "Interests: community service")
+		} else if intr == 22 {
+			append(&this.personality, "Interests: altruism")
+		} else if intr == 23 || intr == 24 {
+			append(&this.personality, "Interests: none")
 		}
 	}
 }
@@ -1715,6 +2687,221 @@ generate_character :: proc(
 	generate_saving_throws(out)
 	generate_skills(out)
 	calculate_spellcasting(out, alloc)
+	out.number_of_attacks = 1
 	generate_attacks(out, is_wealthy, alloc)
+	generate_appearance(out)
+	generate_personality(out)
 	return out
+}
+
+
+format_character :: proc(this: ^Character, alloc: mem.Allocator) -> string {
+	alloc_backing: [4096 * 16]u8
+	arena: mem.Arena
+	mem.arena_init(&arena, alloc_backing[:])
+	alloc := mem.arena_allocator(&arena)
+	name_line := this.name
+	old_all := context.allocator
+	context.allocator = alloc
+	ancestry_gender_class_level_line := fmt.aprintf(
+		"%v %v(born %v) %v(level %v)",
+		this.ancestry,
+		this.gender,
+		this.sex,
+		this.class,
+		this.level,
+	)
+	align := ""
+	switch this.alignment {
+	case .LawfulGood:
+		align = "Lawful Good"
+	case .NeutralGood:
+		align = "Neutral Good"
+	case .ChaoticGood:
+		align = "Chaotic Good"
+	case .LawfulNeutral:
+		align = "Lawful Neutral"
+	case .TrueNeutral:
+		align = "True Neutral"
+	case .ChaoticNeutral:
+		align = "Chaotic Neutral"
+	case .LawfulEvil:
+		align = "Lawful Evil"
+	case .NeutralEvil:
+		align = "Neutral Evil"
+	case .ChaoticEvil:
+		align = "Chaotic Evil"
+	}
+	culture_line := fmt.aprintf("Culture: %v Alignment: %v", this.culture, align)
+	ability_line := fmt.aprintf(
+		"strength:%d dexterity:%d constitution:%d intelligence:%d wisdom:%d charisma:%d",
+		this.ability_scores[.Strength],
+		this.ability_scores[.Dexterity],
+		this.ability_scores[.Constitution],
+		this.ability_scores[.Intelligence],
+		this.ability_scores[.Wisdom],
+		this.ability_scores[.Charisma],
+	)
+	stats_line := fmt.aprintf(
+		"Armor Class: %d(%s) Hit Points: %d",
+		this.armor_class,
+		this.armor_name,
+		this.hit_points,
+	)
+	saves := fmt.aprintf("Saving Throws: ")
+	for i, idx in this.saving_throws {
+		tmp: string
+		if idx + 1 < len(this.saving_throws) {
+			if i.bonus > 0 {
+				tmp = fmt.aprintf("%v(+%d), ", i.ability, i.bonus)
+			} else {
+				tmp = fmt.aprintf("%v(%d), ", i.ability, i.bonus)
+			}
+		} else {
+			if i.bonus > 0 {
+				tmp = fmt.aprintf("%v(+%d)", i.ability, i.bonus)
+			} else {
+				tmp = fmt.aprintf("%v(%d)", i.ability, i.bonus)
+			}
+		}
+		saves = strings.concatenate({saves, tmp})
+	}
+	skills := fmt.aprintf("Skills: ")
+	for i, idx in this.skills {
+		tmp: string
+		if i.is_expert {
+			if idx + 1 < len(this.saving_throws) {
+				if i.bonus > 0 {
+					tmp = fmt.aprintf("%v(+%d)(expert), ", i.skill, i.bonus)
+				} else {
+					tmp = fmt.aprintf("%v(%d)(expert), ", i.skill, i.bonus)
+				}
+			} else {
+				if i.bonus > 0 {
+					tmp = fmt.aprintf("%v(+%d)(expert)", i.skill, i.bonus)
+				} else {
+					tmp = fmt.aprintf("%v(%d)(expert)", i.skill, i.bonus)
+				}
+			}
+		} else {
+			if idx + 1 < len(this.saving_throws) {
+				if i.bonus > 0 {
+					tmp = fmt.aprintf("%v(+%d), ", i.skill, i.bonus)
+				} else {
+					tmp = fmt.aprintf("%v(%d), ", i.skill, i.bonus)
+				}
+			} else {
+				if i.bonus > 0 {
+					tmp = fmt.aprintf("%v(+%d)", i.skill, i.bonus)
+				} else {
+					tmp = fmt.aprintf("%v(%d)", i.skill, i.bonus)
+				}
+			}
+		}
+		skills = strings.concatenate({skills, tmp})
+	}
+	attacks := fmt.aprintf("Attacks(%d weapon attacks per round):", this.number_of_attacks)
+	for i, _idx in this.attacks {
+		attacks = strings.concatenate({attacks, "\n\t", i})
+	}
+	equipment := fmt.aprintf("Equipment: ")
+	for i, _idx in this.equipment {
+		if _idx == 0 {
+			equipment = strings.concatenate({equipment, i})
+		} else {
+			equipment = strings.concatenate({equipment, ", ", i})
+		}
+	}
+	height_feet := this.height_inches / 12
+	height_inches := this.height_inches % 12
+	physical_description := fmt.aprintf(
+		"Height:%d\"%d' Weight: %d lb Hair Color: %v Eye Color:%v Skin Color:%v ",
+		height_feet,
+		height_inches,
+		this.weight_pounds,
+		this.hair_color,
+		this.eye_color,
+		this.skin_color,
+	)
+	cantrips := fmt.aprintf("Cantrips: ")
+	for i, _idx in this.cantrips {
+		if _idx == 0 {
+			cantrips = strings.concatenate({cantrips, i})
+		} else {
+			cantrips = strings.concatenate({cantrips, ", ", i})
+		}
+	}
+	spell_slots := fmt.aprintf(
+		"Spell Slots: First Level:%d Second Level:%d Third Level:%d Fourth Level:%d Fifth Level:%d Sixth Level:%d Seventh Level:%d Eight Level:%d Ninth Level:%d",
+		this.spell_slots[1],
+		this.spell_slots[2],
+		this.spell_slots[3],
+		this.spell_slots[4],
+		this.spell_slots[5],
+		this.spell_slots[6],
+		this.spell_slots[7],
+		this.spell_slots[8],
+		this.spell_slots[9],
+	)
+	prepared_spells := fmt.aprintf(
+		"Prepared Spells(can prepare %d spells): ",
+		this.prepared_spell_count,
+	)
+	for i, _idx in this.prepared_spells {
+		if _idx == 0 {
+			prepared_spells = strings.concatenate({prepared_spells, i})
+		} else {
+			prepared_spells = strings.concatenate({prepared_spells, ", ", i})
+		}
+	}
+	spellbook := fmt.aprintf("Spellbook: ")
+	for i, _idx in this.spellbook {
+		if _idx == 0 {
+			spellbook = strings.concatenate({spellbook, i})
+		} else {
+			spellbook = strings.concatenate({spellbook, ", ", i})
+		}
+	}
+	personality := fmt.aprintf("Personality: ")
+	for i, _idx in this.personality {
+		if _idx == 0 {
+			personality = strings.concatenate({personality, i})
+		} else {
+			personality = strings.concatenate({personality, ", ", i})
+		}
+	}
+	return strings.concatenate(
+		{
+			name_line,
+			"\n",
+			ancestry_gender_class_level_line,
+			"\n",
+			culture_line,
+			"\n",
+			ability_line,
+			"\n",
+			stats_line,
+			"\n",
+			saves,
+			"\n",
+			skills,
+			"\n",
+			attacks,
+			"\n",
+			equipment,
+			"\n",
+			physical_description,
+			"\n",
+			cantrips,
+			"\n",
+			spell_slots,
+			"\n",
+			prepared_spells,
+			"\n",
+			spellbook,
+			"\n",
+			personality,
+		},
+		alloc,
+	)
 }

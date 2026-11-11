@@ -6,6 +6,6 @@ main :: proc() {
 	mem.dynamic_arena_init(&arena)
 	defer mem.dynamic_arena_destroy(&arena)
 	alloc := mem.dynamic_arena_allocator(&arena)
-	char := generate_character(10, .Oeridian, .Human, .MagicUser, alloc)
-	fmt.printf("%#v\n", char)
+	char := generate_character(2, .Oeridian, .Human, .Thief, alloc)
+	fmt.printf("%#v\n", format_character(char, alloc))
 }

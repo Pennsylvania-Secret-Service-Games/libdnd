@@ -106,13 +106,14 @@ op_new_owned_ptr_clone_typed :: proc(
 }
 
 
+/*
 op_new :: proc {
 	op_new_owned_ptr,
 	op_new_owned_ptr_clone,
 	op_new_owned_ptr_clone_typed,
 	op_new_owned_string,
 	op_new_owned_string_typed,
-}
+}*/
 
 op_new_slice :: proc {
 	op_new_owned_slice,
@@ -148,11 +149,12 @@ op_delete_owned_string :: proc(this: OwnedString) {
 	delete(this.data, this.allocator)
 }
 
+/*
 op_delete :: proc {
 	op_delete_owned_ptr,
 	op_delete_owned_slice,
 	op_delete_owned_string,
-}
+}*/
 
 ErrString :: struct {
 	is_static: bool,

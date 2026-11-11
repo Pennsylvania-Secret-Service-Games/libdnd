@@ -2003,7 +2003,7 @@ ElfLastNames: []string = {
 }
 
 @(rodata)
-DragonbornFirstNames: []string = {
+OeridianFlannaeFirstNames: []string = {
 	"Arjhan",
 	"Balasa",
 	"Bharash",
@@ -2041,7 +2041,7 @@ DragonbornFirstNames: []string = {
 }
 
 @(rodata)
-DragonbornLastNames: []string = {
+OeridianFlannaeLastNames: []string = {
 	"Clethtinthiallor",
 	"Daardendrian",
 	"Delmirev",
@@ -6190,7 +6190,7 @@ Culture :: enum {
 	Oeridian,
 	Dwarf,
 	Elf,
-	Dragonborn,
+	OeridianFlannae,
 	Suloise,
 	Gnome,
 	Baklunish,
@@ -6215,10 +6215,10 @@ NAME_TABLE: [Culture]CultureNameData = [Culture]CultureNameData {
 		femme_first_names = ElfFemmeFirstNames,
 		last_names = ElfLastNames,
 	},
-	Culture.Dragonborn = CultureNameData {
-		masc_first_names = DragonbornFirstNames,
-		femme_first_names = DragonbornFirstNames,
-		last_names = DragonbornLastNames,
+	Culture.OeridianFlannae = CultureNameData {
+		masc_first_names = OeridianFlannaeFirstNames,
+		femme_first_names = OeridianFlannaeFirstNames,
+		last_names = OeridianFlannaeLastNames,
 	},
 	Culture.Suloise = CultureNameData {
 		masc_first_names = SuloiseMascFirstNames,
