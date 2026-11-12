@@ -326,7 +326,7 @@ town_has_edge :: proc(this: ^Town, e: Edge) -> bool {
 			return true
 		}
 		{
-			THRESH :: (math.PI / 2) * 0.8
+			THRESH :: (math.PI / 2) * 0.4
 			if (i.start == e.start) {
 				d0 := point_to_vec2(e.end^) - point_to_vec2(i.start^)
 				d1 := point_to_vec2(i.end^) - point_to_vec2(i.start^)
