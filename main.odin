@@ -12,5 +12,5 @@ main :: proc() {
 	alloc := mem.dynamic_arena_allocator(&arena)
 	//	char := characters.generate_character(5, .Baklunish, .Human, .Cleric, alloc)
 	//fmt.printf("%#v\n", characters.format_character(char, alloc))
-	cities.create_town(alloc, 100)
+	cities.create_town(alloc, 2000)
 }
