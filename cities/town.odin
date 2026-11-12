@@ -386,7 +386,7 @@ rand_point :: proc() -> Point {
 }
 
 generate_points :: proc(this: ^Town, point_count: int) {
-	TILE_SIZE :: 40
+	TILE_SIZE :: 38
 	reserve(&this.points, WIDTH * HEIGHT / (TILE_SIZE * TILE_SIZE))
 	for x in 0 ..< cast(i32)(WIDTH / TILE_SIZE) {
 		for y in 0 ..< cast(i32)(HEIGHT / TILE_SIZE) {
