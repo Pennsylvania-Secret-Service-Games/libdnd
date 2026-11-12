@@ -1,4 +1,4 @@
-package libdnd
+package characters
 
 @(rodata)
 OeridianMascFirstNames: []string = {

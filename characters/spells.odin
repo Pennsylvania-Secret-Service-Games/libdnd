@@ -1,4 +1,4 @@
-package libdnd
+package characters
 @(rodata)
 MAGIC_USER_CANTRIPS: []string = {
 	"Acid Splash",

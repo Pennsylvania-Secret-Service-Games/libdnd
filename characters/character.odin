@@ -1,8 +1,12 @@
-package libdnd
+package characters
+import "../utils"
 import "core:fmt"
 import "core:math/rand"
 import "core:mem"
 import "core:strings"
+roll_dice :: utils.roll_dice
+choose_set :: utils.choose_set
+choice :: utils.choice
 Ancestry :: enum {
 	Human,
 	Elf,
@@ -465,22 +469,22 @@ generate_name_by_culture :: proc(
 	last_name: string
 	if rand.float32() < 0.9999 {
 		if name_male {
-			first_name = choise(NAME_TABLE[culture].masc_first_names)
+			first_name = choice(NAME_TABLE[culture].masc_first_names)
 		} else {
-			first_name = choise(NAME_TABLE[culture].femme_first_names)
+			first_name = choice(NAME_TABLE[culture].femme_first_names)
 		}
-		last_name = choise(NAME_TABLE[culture].last_names)
+		last_name = choice(NAME_TABLE[culture].last_names)
 	} else {
 		cult := cast(Culture)rand.int_range(0, len(NAME_TABLE))
 		if name_male {
-			first_name = choise(NAME_TABLE[cult].masc_first_names)
+			first_name = choice(NAME_TABLE[cult].masc_first_names)
 		} else {
-			first_name = choise(NAME_TABLE[cult].femme_first_names)
+			first_name = choice(NAME_TABLE[cult].femme_first_names)
 		}
 		if rand.float32() < 0.9 {
-			last_name = choise(NAME_TABLE[culture].last_names)
+			last_name = choice(NAME_TABLE[culture].last_names)
 		} else {
-			last_name = choise(NAME_TABLE[cult].last_names)
+			last_name = choice(NAME_TABLE[cult].last_names)
 		}
 	}
 	return fmt.aprintf("%s %s", first_name, last_name, allocator = alloc)
