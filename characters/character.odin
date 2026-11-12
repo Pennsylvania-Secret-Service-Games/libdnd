@@ -2191,7 +2191,7 @@ generate_personality :: proc(this: ^Character) {
 		} else if generate_apperance == 4 {
 			append(&this.personality, "Apperance: immaculate")
 		} else if generate_apperance == 5 {
-			append(&this.personality, "Apperance: rought")
+			append(&this.personality, "Apperance: rough")
 		} else if generate_apperance == 6 {
 			append(&this.personality, "Apperance: ragged")
 		} else if generate_apperance == 7 {
@@ -2421,7 +2421,7 @@ generate_personality :: proc(this: ^Character) {
 		} else if mat == 2 {
 			append(&this.personality, "Materialism: intellectualist")
 		} else if mat == 3 {
-			append(&this.personality, "Materialism: verage")
+			append(&this.personality, "Materialism: average")
 		} else if mat == 4 {
 			append(&this.personality, "Materialism: covetous")
 		} else if mat == 5 {
@@ -2439,7 +2439,7 @@ generate_personality :: proc(this: ^Character) {
 		} else if hon == 3 {
 			append(&this.personality, "Honesty: truthful")
 		} else if hon == 4 {
-			append(&this.personality, "Honesty: verage")
+			append(&this.personality, "Honesty: average")
 		} else if hon == 5 {
 			append(&this.personality, "Honesty: average")
 		} else if hon == 6 {
@@ -2569,7 +2569,7 @@ generate_personality :: proc(this: ^Character) {
 		} else if pie == 6 {
 			append(&this.personality, "Piety: average")
 		} else if pie == 7 {
-			append(&this.personality, "Piety: saverage")
+			append(&this.personality, "Piety: average")
 		} else if pie == 8 {
 			append(&this.personality, "Piety: average")
 		} else if pie == 9 {
@@ -2774,7 +2774,7 @@ format_character :: proc(this: ^Character, alloc: mem.Allocator) -> string {
 	for i, idx in this.skills {
 		tmp: string
 		if i.is_expert {
-			if idx + 1 < len(this.saving_throws) {
+			if idx + 1 < len(this.skills) {
 				if i.bonus > 0 {
 					tmp = fmt.aprintf("%v(+%d)(expert), ", i.skill, i.bonus)
 				} else {
@@ -2788,7 +2788,7 @@ format_character :: proc(this: ^Character, alloc: mem.Allocator) -> string {
 				}
 			}
 		} else {
-			if idx + 1 < len(this.saving_throws) {
+			if idx + 1 < len(this.skills) {
 				if i.bonus > 0 {
 					tmp = fmt.aprintf("%v(+%d), ", i.skill, i.bonus)
 				} else {
