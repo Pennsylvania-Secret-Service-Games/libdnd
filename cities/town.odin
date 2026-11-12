@@ -326,7 +326,7 @@ town_has_edge :: proc(this: ^Town, e: Edge) -> bool {
 			return true
 		}
 		{
-			THRESH :: (math.PI / 2) * 0.4
+			THRESH :: (math.PI / 2) * 0.8
 			if (i.start == e.start) {
 				d0 := point_to_vec2(e.end^) - point_to_vec2(i.start^)
 				d1 := point_to_vec2(i.end^) - point_to_vec2(i.start^)
@@ -386,7 +386,7 @@ rand_point :: proc() -> Point {
 }
 
 generate_points :: proc(this: ^Town, point_count: int) {
-	TILE_SIZE :: 38
+	TILE_SIZE :: 30
 	reserve(&this.points, WIDTH * HEIGHT / (TILE_SIZE * TILE_SIZE))
 	for x in 0 ..< cast(i32)(WIDTH / TILE_SIZE) {
 		for y in 0 ..< cast(i32)(HEIGHT / TILE_SIZE) {
@@ -404,7 +404,7 @@ generate_edges :: proc(this: ^Town) {
 	for &i, idx in this.points {
 		hit_count := 0
 		rand.shuffle(points2)
-		candidate_count := rand.int_range(2, 10)
+		candidate_count := rand.int_range(10, 100)
 		for &j, idx2 in this.points {
 			if hit_count >= candidate_count {
 				break
