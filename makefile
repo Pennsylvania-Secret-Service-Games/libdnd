@@ -1,2 +1,2 @@
 make: . 
-	odin build . -out:a.out -o:aggressive
+	odin build . -out:a.out -o:speed

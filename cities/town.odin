@@ -40,18 +40,50 @@ Town :: struct {
 	buildings: [dynamic]^Building,
 }
 
+@(fast_math = {
+	.Allow_Reassoc,
+	.No_NaNs,
+	.No_Infs,
+	.No_Signed_Zeros,
+	.Allow_Reciprocal,
+	.Allow_Contract,
+})
 point_to_vec2 :: proc(p: Point) -> Vec2 {
 	return Vec2{cast(f32)p.x, cast(f32)p.y}
 }
 
+@(fast_math = {
+	.Allow_Reassoc,
+	.No_NaNs,
+	.No_Infs,
+	.No_Signed_Zeros,
+	.Allow_Reciprocal,
+	.Allow_Contract,
+})
 vec2_to_point :: proc(v: Vec2) -> Point {return Point{cast(i32)v.x, cast(i32)v.y}}
 
+@(fast_math = {
+	.Allow_Reassoc,
+	.No_NaNs,
+	.No_Infs,
+	.No_Signed_Zeros,
+	.Allow_Reciprocal,
+	.Allow_Contract,
+})
 point_distance_to_point :: proc(p1: Point, p2: Point) -> f32 {
 	dx := cast(f32)(p1.x - p2.x)
 	dy := cast(f32)(p1.y - p2.y)
 	return math.sqrt(dx * dx + dy * dy)
 }
 
+@(fast_math = {
+	.Allow_Reassoc,
+	.No_NaNs,
+	.No_Infs,
+	.No_Signed_Zeros,
+	.Allow_Reciprocal,
+	.Allow_Contract,
+})
 distance_to_edge :: proc(p: Point, e: OwnedEdge) -> f32 {
 	p0 := point_to_vec2(p)
 	s := point_to_vec2(e.start)
@@ -74,6 +106,14 @@ distance_to_edge :: proc(p: Point, e: OwnedEdge) -> f32 {
 }
 
 
+@(fast_math = {
+	.Allow_Reassoc,
+	.No_NaNs,
+	.No_Infs,
+	.No_Signed_Zeros,
+	.Allow_Reciprocal,
+	.Allow_Contract,
+})
 distance_between_edges :: proc(e1: OwnedEdge, e2: OwnedEdge) -> f32 {
 	s := point_to_vec2(e1.start)
 	e := point_to_vec2(e1.end)
@@ -91,16 +131,40 @@ distance_between_edges :: proc(e1: OwnedEdge, e2: OwnedEdge) -> f32 {
 	return min_dist
 }
 
+@(fast_math = {
+	.Allow_Reassoc,
+	.No_NaNs,
+	.No_Infs,
+	.No_Signed_Zeros,
+	.Allow_Reciprocal,
+	.Allow_Contract,
+})
 edge_rotation :: proc(e: Edge) -> f32 {
 	delta := point_to_vec2(e.end^) - point_to_vec2(e.start^)
 	return math.atan2(delta.y, delta.x)
 }
 
+@(fast_math = {
+	.Allow_Reassoc,
+	.No_NaNs,
+	.No_Infs,
+	.No_Signed_Zeros,
+	.Allow_Reciprocal,
+	.Allow_Contract,
+})
 edge_forward_vector :: proc(e: Edge) -> raylib.Vector2 {
 	ang := edge_rotation(e)
 	return raylib.Vector2Normalize(edge_end_vector(e) - edge_start_vector(e))
 }
 
+@(fast_math = {
+	.Allow_Reassoc,
+	.No_NaNs,
+	.No_Infs,
+	.No_Signed_Zeros,
+	.Allow_Reciprocal,
+	.Allow_Contract,
+})
 edge_right_vector :: proc(e: Edge) -> raylib.Vector2 {
 	return raylib.Vector2Rotate(
 		raylib.Vector2Normalize(edge_end_vector(e) - edge_start_vector(e)),
@@ -108,18 +172,50 @@ edge_right_vector :: proc(e: Edge) -> raylib.Vector2 {
 	)
 }
 
+@(fast_math = {
+	.Allow_Reassoc,
+	.No_NaNs,
+	.No_Infs,
+	.No_Signed_Zeros,
+	.Allow_Reciprocal,
+	.Allow_Contract,
+})
 edge_start_vector :: proc(e: Edge) -> raylib.Vector2 {
 	return point_to_vec2(e.start^)
 }
 
+@(fast_math = {
+	.Allow_Reassoc,
+	.No_NaNs,
+	.No_Infs,
+	.No_Signed_Zeros,
+	.Allow_Reciprocal,
+	.Allow_Contract,
+})
 edge_end_vector :: proc(e: Edge) -> raylib.Vector2 {
 	return point_to_vec2(e.end^)
 }
 
+@(fast_math = {
+	.Allow_Reassoc,
+	.No_NaNs,
+	.No_Infs,
+	.No_Signed_Zeros,
+	.Allow_Reciprocal,
+	.Allow_Contract,
+})
 edge_length :: proc(e: ^Edge) -> f32 {
 	return point_distance_to_point(e.start^, e.end^)
 }
 
+@(fast_math = {
+	.Allow_Reassoc,
+	.No_NaNs,
+	.No_Infs,
+	.No_Signed_Zeros,
+	.Allow_Reciprocal,
+	.Allow_Contract,
+})
 building_to_vertices :: proc(b: Building) -> [4]Vec2 {
 	w := cast(f32)b.width / 2
 	h := cast(f32)b.height / 2
@@ -139,6 +235,14 @@ building_to_vertices :: proc(b: Building) -> [4]Vec2 {
 	return {p0, p1, p2, p3}
 }
 
+@(fast_math = {
+	.Allow_Reassoc,
+	.No_NaNs,
+	.No_Infs,
+	.No_Signed_Zeros,
+	.Allow_Reciprocal,
+	.Allow_Contract,
+})
 building_to_triangles :: proc(b: Building) -> [2][3]Vec2 {
 	w := cast(f32)b.width / 2
 	h := cast(f32)b.height / 2
@@ -160,6 +264,14 @@ building_to_triangles :: proc(b: Building) -> [2][3]Vec2 {
 	return {t1, t2}
 }
 
+@(fast_math = {
+	.Allow_Reassoc,
+	.No_NaNs,
+	.No_Infs,
+	.No_Signed_Zeros,
+	.Allow_Reciprocal,
+	.Allow_Contract,
+})
 building_check_collision :: proc(b1: Building, b2: Building) -> bool {
 	trs1 := building_to_triangles(b1)
 	trs2 := building_to_triangles(b2)
@@ -200,6 +312,14 @@ building_render_to_image :: proc(img: ^raylib.Image, b: Building, color: raylib.
 	}
 }
 
+@(fast_math = {
+	.Allow_Reassoc,
+	.No_NaNs,
+	.No_Infs,
+	.No_Signed_Zeros,
+	.Allow_Reciprocal,
+	.Allow_Contract,
+})
 town_has_edge :: proc(this: ^Town, e: Edge) -> bool {
 	for i in this.edges {
 		if (i.end == e.end && i.start == e.start) || (i.start == e.end && i.end == e.start) {
@@ -237,6 +357,14 @@ town_has_edge :: proc(this: ^Town, e: Edge) -> bool {
 	return false
 }
 
+@(fast_math = {
+	.Allow_Reassoc,
+	.No_NaNs,
+	.No_Infs,
+	.No_Signed_Zeros,
+	.Allow_Reciprocal,
+	.Allow_Contract,
+})
 edge_intersects :: proc(this: ^Town, e: Edge) -> bool {
 	start := point_to_vec2(e.start^)
 	end := point_to_vec2(e.end^)
@@ -270,6 +398,7 @@ generate_points :: proc(this: ^Town, point_count: int) {
 	}
 }
 
+
 generate_edges :: proc(this: ^Town) {
 	points2 := slice.clone(this.points[:])
 	for &i, idx in this.points {
@@ -297,6 +426,14 @@ generate_edges :: proc(this: ^Town) {
 	}
 }
 
+@(fast_math = {
+	.Allow_Reassoc,
+	.No_NaNs,
+	.No_Infs,
+	.No_Signed_Zeros,
+	.Allow_Reciprocal,
+	.Allow_Contract,
+})
 town_can_place_building :: proc(this: ^Town, b: Building) -> bool {
 	tris := building_to_triangles(b)
 	for i in this.buildings {
@@ -320,6 +457,14 @@ town_can_place_building :: proc(this: ^Town, b: Building) -> bool {
 	return true
 }
 
+@(fast_math = {
+	.Allow_Reassoc,
+	.No_NaNs,
+	.No_Infs,
+	.No_Signed_Zeros,
+	.Allow_Reciprocal,
+	.Allow_Contract,
+})
 generate_buildings :: proc(this: ^Town, building_count: int) {
 	edge_list := slice.clone(this.edges[:])
 	defer delete(edge_list)
@@ -340,9 +485,9 @@ generate_buildings :: proc(this: ^Town, building_count: int) {
 		for _i in 0 ..= 1 {
 			dy: f32 = 0
 			for dy < dist {
-				width: i32 = rand.int32_range(8, 15)
+				width: i32 = rand.int32_range(6, 11)
 				height: i32 = 0
-				SHIFT :: 4
+				SHIFT :: 2
 				ROT_SHIFT :: 0.
 				base_h := rand.int_range(10, 15)
 				for dh in 0 ..= 8 {
@@ -365,7 +510,7 @@ generate_buildings :: proc(this: ^Town, building_count: int) {
 					}
 				}
 				if height == 0 {
-					dy += rand.float32() / 2.
+					dy += cast(f32)width / 2
 					continue
 				}
 				b: Building
