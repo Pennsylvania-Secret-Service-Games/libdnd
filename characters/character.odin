@@ -1451,7 +1451,7 @@ generate_attacks :: proc(this: ^Character, is_wealthy: bool, alloc: mem.Allocato
 				append(
 					&this.attacks,
 					fmt.aprintf(
-						"Acid Splach(range 60 feet):each creature in a 5 foot sphere within 60 feet must make a dc %d dexterity save, %dd6 acid damage on a failure",
+						"Acid Splash(range 60 feet):each creature in a 5 foot sphere within 60 feet must make a dc %d dexterity save, %dd6 acid damage on a failure",
 						this.spell_save_dc,
 						cantrip_die_count,
 						allocator = alloc,
@@ -2866,12 +2866,12 @@ format_character :: proc(this: ^Character, alloc: mem.Allocator) -> string {
 			spellbook = strings.concatenate({spellbook, ", ", i})
 		}
 	}
-	personality := fmt.aprintf("Personality: ")
+	personality := fmt.aprintf("Personality:\n\t")
 	for i, _idx in this.personality {
 		if _idx == 0 {
 			personality = strings.concatenate({personality, i})
 		} else {
-			personality = strings.concatenate({personality, ", ", i})
+			personality = strings.concatenate({personality, "\n\t", i})
 		}
 	}
 	return strings.concatenate(
