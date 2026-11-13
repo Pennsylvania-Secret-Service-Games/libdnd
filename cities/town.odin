@@ -306,7 +306,10 @@ building_check_collision :: proc(b1: Building, b2: Building) -> bool {
 }
 
 building_render_to_image :: proc(img: ^raylib.Image, b: Building, color: raylib.Color) {
-	tris := building_to_vertices(b)
+	b2 := b
+	b2.height -= 2
+	b2.width -= 2
+	tris := building_to_vertices(b2)
 	for i in 0 ..< 4 {
 		raylib.ImageDrawLineV(img, tris[i], tris[(i + 1) % 4], color)
 	}
