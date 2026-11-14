@@ -8,6 +8,9 @@ import "core:reflect"
 import "core:strings"
 
 import "core:math/rand"
+import "vendor:raylib"
+TEXT_HEIGHT_MIN :: 10
+TEXT_HEIGHT_MAX :: 20
 choice :: proc(list: []$T) -> T {
 	return rand.choice(list)
 }
@@ -397,4 +400,20 @@ catch :: proc(v: Err) -> bool {
 }
 try_catch :: proc(v: $T, e: Err) -> (T, bool) {
 	return v, catch(e)
+}
+
+ArenaHandle :: struct {
+	_inner: ^mem.Dynamic_Arena,
+	_alloc: mem.Allocator,
+}
+
+create_arena :: proc() -> (mem.Allocator, ArenaHandle) {
+	base := new(mem.Dynamic_Arena)
+	mem.dynamic_arena_init(base)
+	return mem.dynamic_arena_allocator(base), ArenaHandle{base, context.allocator}
+}
+
+destroy_arena :: proc(arena: ArenaHandle) {
+	mem.dynamic_arena_destroy(arena._inner)
+	free(arena._inner, arena._alloc)
 }

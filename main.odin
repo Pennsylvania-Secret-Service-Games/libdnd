@@ -6,11 +6,8 @@ import "core:mem"
 import "utils"
 
 main :: proc() {
-	arena: mem.Dynamic_Arena
-	mem.dynamic_arena_init(&arena)
-	defer mem.dynamic_arena_destroy(&arena)
-	alloc := mem.dynamic_arena_allocator(&arena)
-	//	char := characters.generate_character(5, .Baklunish, .Human, .Cleric, alloc)
-	//fmt.printf("%#v\n", characters.format_character(char, alloc))
-	cities.create_town(alloc, 2000)
+	alloc, _h := utils.create_arena()
+	defer utils.destroy_arena(_h)
+	town := cities.create_town(cities.random_water(), 100, 0., alloc)
+	cities.town_render2d(town, "test.png")
 }
