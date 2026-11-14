@@ -1,4 +1,5 @@
 package cities
+import "core:container/intrusive/list"
 import "core:encoding/ini"
 import "core:fmt"
 import "core:math"
@@ -9,6 +10,7 @@ import "core:mem"
 import "core:slice"
 import "core:sort"
 import "core:strings"
+import "vendor:ENet"
 import "vendor:directx/d3d12"
 import "vendor:raylib"
 import "vendor:raylib/rlgl"
@@ -41,7 +43,9 @@ Edge :: struct {
 }
 
 Wall :: struct {
-	edge: ^Edge,
+	start:    ^Vec2,
+	end:      ^Vec2,
+	is_ghost: bool,
 }
 Point :: struct {
 	x: i32,
@@ -806,281 +810,95 @@ create_buildings :: proc(this: ^Town, building_count: int, alloc: mem.Allocator)
 
 
 create_walls :: proc(this: ^Town, age: f32) {
-	edge_cost :: proc(ed: ^Edge, guess: Vec2) -> f32 {
-		pos1 := edge_start(ed^)
-		pos2 := edge_end(ed^)
-		pos3 := edge_center(ed^)
-		d1 := linalg.distance(pos1, guess)
-		d2 := linalg.distance(pos2, guess)
-		d3 := linalg.distance(pos3, guess)
-		dx1 := (d1 - d2) * (d1 - d2)
-		dy1 := (d2 - d3) * (d2 - d3)
-		dz1 := (d3 - d1) * (d3 - d1)
-		out := (dx1 + dy1 + dz1)
-		out2 := (d1 * d1 + d2 * d2 + d3 * d3)
-		return out / 5 + out2
-	}
-
-	edge_cost_over_time :: proc(
-		ed: ^Edge,
-		theta: f32,
-		shift: f32,
-		average_distance: f32,
-		center: Vec2,
-		max_dt: i32,
-	) -> f32 {
-		guess := Vec2{math.cos(theta), math.sin(theta)} * average_distance + center
-		cost: f32 = edge_cost(ed, guess)
-		min_cost := cost
-		for dt in 0 ..= max_dt {
-			guess2 :=
-				Vec2 {
-						math.cos(theta + shift * cast(f32)dt),
-						math.sin(theta + shift * cast(f32)dt),
-					} *
-					average_distance +
-				center
-			tr_min_cost := edge_cost(ed, guess2)
-			if tr_min_cost > cost {
-				cost = tr_min_cost
-			}
-			if tr_min_cost < min_cost {
-				min_cost = tr_min_cost
-			}
-		}
-		return cost
+	max_rad: f32 = 0.
+	if len(this.buildings) < 1 {
+		return
 	}
 	center := Vec2{}
+	building_count := cast(f32)len(this.buildings)
 	for i in this.buildings {
 		center += i.center
 	}
-	center /= cast(f32)len(this.buildings)
-	max_distance: f32 = 0
-	average_distance: f32 = 0.
+	center /= building_count
+	stddev: f32 = 0.0
 	for i in this.buildings {
 		dist := linalg.distance(i.center, center)
-		average_distance += dist
-		if dist > max_distance {
-			max_distance = dist
+		stddev += dist * dist
+		if dist > max_rad {
+			max_rad = dist
 		}
 	}
-	average_distance /= cast(f32)len(this.buildings)
-	average_distance *= math.sqrt_f32(1.5)
-	max_distance *= 1.1
-	average_distance = average_distance * (age) + max_distance * (1 - age)
-	if average_distance < TILE_SIZE * 4 {
-		average_distance = TILE_SIZE * 4
+	if building_count < 2 {
+		building_count = 2
 	}
-	average_distance /= (TILE_SIZE * 1.5)
-	average_distance = math.floor(average_distance)
-	average_distance *= (TILE_SIZE * 1.5)
-	current: ^Edge = nil
-	min_dist: f32 = 100000000000 + 100000000000
-	MAX_DT :: 3
-	SHIFT := (1) / (clamp(average_distance, 1, average_distance) / (TILE_SIZE / (2 * math.PI)))
-	guess := Vec2{1, 0} * (average_distance) + this.center
-	purge_center := this.center
-	for i in this.edges {
-		d := edge_cost(i, guess)
-		d2: f32 = edge_cost_over_time(i, 0, SHIFT, average_distance, this.center, MAX_DT)
-		hit_j := false
-		for j in this.edges {
-			if i == j || edge_eq(i^, j^) {
-				continue
-			}
-			if !edge_borders(i^, j^) {
-				continue
-			}
-			d3 := edge_cost_over_time(j, 0, SHIFT, average_distance, this.center, MAX_DT)
-			if d3 < d2 {
-				hit_j = true
-				d2 = d3
-			}
+	stddev /= (building_count - 1)
+	stddev = math.sqrt(stddev)
+	radius := stddev * (age) + max_rad * (1 - age)
+	theta: f32 = 0.0
+	current: ^Vec2 = nil
+	guess: Vec2 = Vec2{math.cos(theta), math.sin(theta)} * radius + center
+	prev: Vec2 = Vec2{math.cos(theta - 0.1), math.sin(theta - 0.1)} * radius + center
+	prev0: Vec2 = Vec2{math.cos(theta - 0.2), math.sin(theta - 0.2)} * radius + center
+	closest_distance: f32 = 0
+	for i in this.points {
+		delta := linalg.normalize(prev - prev0)
+		delta_2 := linalg.normalize(i^ - prev)
+		if linalg.dot(delta, delta_2) < 0.5 {
+			continue
 		}
-		cost := d + d2
-		if cost < min_dist && hit_j {
-			min_dist = cost
+		dist := linalg.distance(i^, guess)
+		if dist < closest_distance || current == nil {
 			current = i
+			closest_distance = dist
 		}
 	}
-	start: ^Edge = current
-	append(&this.walls, Wall{current})
-	theta: f32 = SHIFT
-	reached_set := make(map[^Edge]u8)
-	defer delete(reached_set)
-	last_theta: f32 = 0
-	for theta <= math.PI * 2 + SHIFT {
-		fmt.printf("theta:%f\n", theta)
-		if current != start {
-			reached_set[current] = 1
-		} else if theta > math.PI {
-			break
-		}
-		if theta > math.PI * 1.5 {
-			candidate: ^Edge = nil
-			hit := false
-			for j in this.walls {
-				if edge_borders(j.edge^, start^) && edge_borders(j.edge^, current^) {
-					hit = true
-					break
-				}
-			}
-			if !hit {
-				for i in this.edges {
-					if edge_borders(i^, start^) && edge_borders(i^, current^) {
-						candidate = i
-						break
-					}
-				}
-			}
-			if candidate != nil {
-				//	append(&this.walls, Wall{current})
-				append(&this.walls, Wall{candidate})
-				current = candidate
-				break
-			}
-		}
-		guess1 := Vec2{math.cos(theta), math.sin(theta)} * average_distance + this.center
-		nxt: ^Edge = nil
-		l_min_cost := edge_cost(current, guess1)
-		r_min_cost: f32 = 10000000000000
-		frd := edge_forward(current^)
-		hit_usable := false
+	start := current
+	for theta < math.TAU {
+		guess = Vec2{math.cos(theta), math.sin(theta)} * radius + center
+		closest_distance = linalg.distance(guess, current^)
+		is_ghost: bool = false
+		next: ^Vec2 = nil
 		for i in this.edges {
-			if i in reached_set {
+			second: ^Vec2 = nil
+			if (i.start == current && i.end == current) {
 				continue
 			}
-			if i == current {
+			if i.start == current {
+				second = i.end
+			}
+			if i.end == current {
+				second = i.start
+			}
+			if second == nil {
 				continue
 			}
-			if !edge_borders(i^, current^) {
+			delta := linalg.normalize(current^ - prev)
+			delta2 := linalg.normalize(second^ - current^)
+			if linalg.dot(delta, delta2) < -0.5 {
 				continue
 			}
-			hit_usable = true
-			tr_min_cost := edge_cost_over_time(
-				i,
-				theta,
-				SHIFT,
-				average_distance,
-				this.center,
-				MAX_DT,
-			)
-			if tr_min_cost < r_min_cost {
-				r_min_cost = tr_min_cost
+			dist := linalg.distance(guess, second^)
+			if dist < closest_distance {
+				is_ghost = i.is_ghost
+				next = second
+				closest_distance = dist
+			}
+			if theta > math.TAU * 0.9 {
+				if second == start {
+					closest_distance = 0
+					is_ghost = i.is_ghost
+					next = second
+					closest_distance = dist
+				}
 			}
 		}
-		if !hit_usable {
-			break
+		if next != nil {
+			append(&this.walls, Wall{current, next, is_ghost})
+			prev = current^
+			current = next
 		}
-		min_cost := l_min_cost + r_min_cost
-		for i in this.edges {
-			if i == current {
-				continue
-			}
-			if !edge_borders(i^, current^) {
-				continue
-			}
-			if i in reached_set {
-				continue
-			}
-			cst := edge_cost(i, guess1)
-			cst2: f32 = edge_cost_over_time(i, theta, SHIFT, average_distance, this.center, MAX_DT)
-			ck3: ^Edge = nil
-			for j in this.edges {
-				if j == current {
-					continue
-				}
-				if j == i {
-					continue
-				}
-				if !edge_borders(i^, j^) {
-					continue
-				}
-				if j in reached_set {
-					continue
-				}
-				cst3 := edge_cost_over_time(j, theta, SHIFT, average_distance, this.center, MAX_DT)
-				if cst3 < cst2 {
-					cst2 = cst3
-					ck3 = j
-				}
-			}
-			if ck3 != nil {
-				if edge_borders(ck3^, current^) || ck3 == current {
-					continue
-				}
-			} else {
-				continue
-			}
-			if cst + cst2 < min_cost {
-				min_cost = cst + cst2
-				nxt = i
-			}
-		}
-		if nxt != nil {
-			current = nxt
-			append(&this.walls, Wall{current})
-			last_theta = theta
-		}
-		theta += SHIFT
+		theta += 0.01
 	}
-	if !edge_borders(current^, start^) {
-		candidate: ^Edge = nil
-		hit := false
-		for j in this.walls {
-			if edge_borders(j.edge^, start^) && edge_borders(j.edge^, current^) {
-				hit = true
-				break
-			}
-		}
-		if !hit {
-			for i in this.edges {
-				if edge_borders(i^, start^) && edge_borders(i^, current^) {
-					candidate = i
-					break
-				}
-			}
-		}
-		if candidate != nil {
-			append(&this.walls, Wall{candidate})
-		} else {
-			fmt.printf("no candidate\n")
-		}
-	}
-	/*
-	for {
-		hit := false
-		to_remove := -1
-		for i, idx in this.walls {
-			e := i.edge
-			has_top := false
-			has_bottom := false
-			for j in this.edges {
-				if edge_eq(j^, e^) {
-					continue
-				}
-				if linalg.dot(edge_forward(e^), edge_forward(j^)) < -0.5 {
-					continue
-				}
-				if j.start == e.start || j.end == e.start {
-					has_top = true
-				}
-				if j.start == e.end || j.end == e.end {
-					has_bottom = true
-				}
-			}
-			if !(has_top && has_bottom) {
-				hit = true
-				to_remove = idx
-				break
-			}
-		}
-		if !hit {
-			break
-		}
-		unordered_remove(&this.walls, to_remove)
-		continue
-	}*/
 }
 
 create_town :: proc(
@@ -1167,33 +985,33 @@ town_render2d :: proc(this: ^Town, path: string) {
 		}
 	}
 	for i in this.walls {
-		if i.edge.is_ghost {
+		if i.is_ghost {
 			continue
 		}
 		hit = true
-		if cast(i32)i.edge.start.x < min_x {
-			min_x = cast(i32)i.edge.start.x
+		if cast(i32)i.start.x < min_x {
+			min_x = cast(i32)i.start.x
 		}
-		if cast(i32)i.edge.start.y < min_y {
-			min_y = cast(i32)i.edge.start.y
+		if cast(i32)i.start.y < min_y {
+			min_y = cast(i32)i.start.y
 		}
-		if cast(i32)i.edge.start.x > max_x {
-			max_x = cast(i32)i.edge.start.x
+		if cast(i32)i.start.x > max_x {
+			max_x = cast(i32)i.start.x
 		}
-		if cast(i32)i.edge.start.y > max_y {
-			max_y = cast(i32)i.edge.start.y
+		if cast(i32)i.start.y > max_y {
+			max_y = cast(i32)i.start.y
 		}
-		if cast(i32)i.edge.end.x < min_x {
-			min_x = cast(i32)i.edge.end.x
+		if cast(i32)i.end.x < min_x {
+			min_x = cast(i32)i.end.x
 		}
-		if cast(i32)i.edge.end.y < min_y {
-			min_y = cast(i32)i.edge.end.y
+		if cast(i32)i.end.y < min_y {
+			min_y = cast(i32)i.end.y
 		}
-		if cast(i32)i.edge.end.x > max_x {
-			max_x = cast(i32)i.edge.end.x
+		if cast(i32)i.end.x > max_x {
+			max_x = cast(i32)i.end.x
 		}
-		if cast(i32)i.edge.end.y > max_y {
-			max_y = cast(i32)i.edge.end.y
+		if cast(i32)i.end.y > max_y {
+			max_y = cast(i32)i.end.y
 		}
 	}
 	if !hit {
@@ -1227,13 +1045,13 @@ town_render2d :: proc(this: ^Town, path: string) {
 		}
 	}
 	for i in this.walls {
-		if !i.edge.is_ghost || true {
+		if !i.is_ghost || true {
 			raylib.ImageDrawLineEx(
 				&img,
-				i.edge.start^ - shift,
-				i.edge.end^ - shift,
+				i.start^ - shift,
+				i.end^ - shift,
 				5,
-				raylib.RED if i.edge.is_ghost else raylib.DARKGRAY,
+				raylib.RED if i.is_ghost else raylib.DARKGRAY,
 			)
 		}
 	}
