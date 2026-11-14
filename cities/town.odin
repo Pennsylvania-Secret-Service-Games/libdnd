@@ -511,7 +511,7 @@ create_water :: proc(this: ^Town, shape: WaterShape, alloc: mem.Allocator) {
 		}
 	case .CoastNorth:
 		this.allowed.y = 0
-		this.center = {this.width / 2, this.height / 10}
+		this.center = {this.width / 2, this.height / 3}
 		for i in -this.width / 5 ..< this.width / 5 {
 			v := (noise.noise_2d(seed, {cast(f64)i / NOISE_DIV, 0}) - 0.5) * 2
 			for dx in -LONG ..= 10 {
@@ -556,7 +556,7 @@ create_water :: proc(this: ^Town, shape: WaterShape, alloc: mem.Allocator) {
 			}
 		}
 	case .CoastWest:
-		this.center = {this.width / 10, this.height / 2}
+		this.center = {this.width / 3, this.height / 2}
 		this.allowed.x = 0
 		for i in -this.width / 5 ..< this.width / 5 {
 			v := (noise.noise_2d(seed, {cast(f64)i / NOISE_DIV, 0}) - 0.5) * 2
@@ -1045,14 +1045,8 @@ town_render2d :: proc(this: ^Town, path: string) {
 		}
 	}
 	for i in this.walls {
-		if !i.is_ghost || true {
-			raylib.ImageDrawLineEx(
-				&img,
-				i.start^ - shift,
-				i.end^ - shift,
-				5,
-				raylib.RED if i.is_ghost else raylib.DARKGRAY,
-			)
+		if !i.is_ghost {
+			raylib.ImageDrawLineEx(&img, i.start^ - shift, i.end^ - shift, 4, raylib.DARKGRAY)
 		}
 	}
 	cstr_path := strings.clone_to_cstring(path)
