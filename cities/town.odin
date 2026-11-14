@@ -815,8 +815,8 @@ create_walls :: proc(this: ^Town, age: f32) {
 		dy1 := (d2 - d3) * (d2 - d3)
 		dz1 := (d3 - d1) * (d3 - d1)
 		out := (dx1 + dy1 + dz1)
-		out2 := max(d1 * d1, d2 * d2, d3 * d3)
-		return math.sqrt(math.sqrt(out) + out2 + d1)
+		out2 := (d1 * d1 + d2 * d2 + d3 * d3)
+		return out / 5 + out2
 	}
 
 	edge_cost_over_time :: proc(
@@ -827,7 +827,9 @@ create_walls :: proc(this: ^Town, age: f32) {
 		center: Vec2,
 		max_dt: i32,
 	) -> f32 {
-		cost: f32 = 0
+		guess := Vec2{math.cos(theta), math.sin(theta)} * average_distance + center
+		cost: f32 = edge_cost(ed, guess)
+		min_cost := cost
 		for dt in 0 ..= max_dt {
 			guess2 :=
 				Vec2 {
@@ -839,6 +841,9 @@ create_walls :: proc(this: ^Town, age: f32) {
 			tr_min_cost := edge_cost(ed, guess2)
 			if tr_min_cost > cost {
 				cost = tr_min_cost
+			}
+			if tr_min_cost < min_cost {
+				min_cost = tr_min_cost
 			}
 		}
 		return cost
@@ -885,12 +890,13 @@ create_walls :: proc(this: ^Town, age: f32) {
 	if average_distance < TILE_SIZE * 4 {
 		average_distance = TILE_SIZE * 4
 	}
-	average_distance = math.floor(average_distance / (TILE_SIZE))
-	average_distance *= (TILE_SIZE)
+	average_distance /= (TILE_SIZE * 1.5)
+	average_distance = math.floor(average_distance)
+	average_distance *= (TILE_SIZE * 1.5)
 	current: ^Edge = nil
 	min_dist: f32 = 100000000000 + 100000000000
 	MAX_DT :: 2
-	SHIFT := (1) / (clamp(average_distance, 1, average_distance) / TILE_SIZE) * 0.5
+	SHIFT := (1) / (clamp(average_distance, 1, average_distance) / TILE_SIZE)
 	guess := Vec2{1, 0} * (average_distance) + this.center
 	purge_center := this.center
 	for i in this.edges {
