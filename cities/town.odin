@@ -362,7 +362,9 @@ edge_left :: proc(e: Edge) -> Vec2 {
 edge_eq :: proc(e1: Edge, e2: Edge) -> bool {
 	v1 := e1.start == e2.start && e1.end == e2.end
 	v2 := e1.start == e2.end && e1.end == e2.start
-	return v1 || v2
+	v3 := e1.start^ == e2.start^ && e1.end^ == e2.end^
+	v4 := e1.start^ == e2.end^ && e1.end^ == e2.start^
+	return v1 || v2 || v3 || v4
 }
 
 
@@ -848,27 +850,6 @@ create_walls :: proc(this: ^Town, age: f32) {
 		}
 		return cost
 	}
-
-	dot_purge :: proc(ed: ^Edge, center: Vec2, annoying := false) -> bool {
-		thres: f32 = 0.9
-		if annoying {
-			thres = 0.7
-		}
-		frd := edge_forward(ed^)
-		dx := edge_center(ed^) - center
-		ang := math.atan2(dx.y, dx.x) + math.PI
-		ang2 := math.atan2(frd.y, frd.x) + math.PI
-		nm := linalg.normalize(dx)
-		n_cost := abs(linalg.dot(frd, nm))
-		if n_cost > thres {
-			return true
-		}
-		if math.abs(ang - ang2) < math.PI / 2 * 0.1 {
-			return true
-		}
-		return false
-	}
-
 	center := Vec2{}
 	for i in this.buildings {
 		center += i.center
@@ -895,8 +876,8 @@ create_walls :: proc(this: ^Town, age: f32) {
 	average_distance *= (TILE_SIZE * 1.5)
 	current: ^Edge = nil
 	min_dist: f32 = 100000000000 + 100000000000
-	MAX_DT :: 2
-	SHIFT := (1) / (clamp(average_distance, 1, average_distance) / TILE_SIZE)
+	MAX_DT :: 3
+	SHIFT := (1) / (clamp(average_distance, 1, average_distance) / (TILE_SIZE / (2 * math.PI)))
 	guess := Vec2{1, 0} * (average_distance) + this.center
 	purge_center := this.center
 	for i in this.edges {
@@ -904,7 +885,7 @@ create_walls :: proc(this: ^Town, age: f32) {
 		d2: f32 = edge_cost_over_time(i, 0, SHIFT, average_distance, this.center, MAX_DT)
 		hit_j := false
 		for j in this.edges {
-			if i == j {
+			if i == j || edge_eq(i^, j^) {
 				continue
 			}
 			if !edge_borders(i^, j^) {
@@ -1066,6 +1047,40 @@ create_walls :: proc(this: ^Town, age: f32) {
 			fmt.printf("no candidate\n")
 		}
 	}
+	/*
+	for {
+		hit := false
+		to_remove := -1
+		for i, idx in this.walls {
+			e := i.edge
+			has_top := false
+			has_bottom := false
+			for j in this.edges {
+				if edge_eq(j^, e^) {
+					continue
+				}
+				if linalg.dot(edge_forward(e^), edge_forward(j^)) < -0.5 {
+					continue
+				}
+				if j.start == e.start || j.end == e.start {
+					has_top = true
+				}
+				if j.start == e.end || j.end == e.end {
+					has_bottom = true
+				}
+			}
+			if !(has_top && has_bottom) {
+				hit = true
+				to_remove = idx
+				break
+			}
+		}
+		if !hit {
+			break
+		}
+		unordered_remove(&this.walls, to_remove)
+		continue
+	}*/
 }
 
 create_town :: proc(
@@ -1217,7 +1232,7 @@ town_render2d :: proc(this: ^Town, path: string) {
 				&img,
 				i.edge.start^ - shift,
 				i.edge.end^ - shift,
-				3,
+				5,
 				raylib.RED if i.edge.is_ghost else raylib.DARKGRAY,
 			)
 		}
